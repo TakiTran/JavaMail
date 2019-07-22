@@ -13,6 +13,9 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
 public class SendingMails {
+	private SendingMails() {
+		
+	}
 	static Logger logger = Logger.getLogger(CheckingMails.class.getName());
     public static void sendEmail(String username, String password, String to, String subject, String content) {
         String host = "smtp.gmail.com";

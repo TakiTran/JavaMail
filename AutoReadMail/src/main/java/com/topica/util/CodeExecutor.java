@@ -34,7 +34,7 @@ public class CodeExecutor implements Callable<Integer> {
 					score++;
 			}
 		} catch (IOException | InterruptedException e) {
-			e.printStackTrace();
+			logger.info(e.getMessage());
 			return -1;
 		} finally {
 			Thread.currentThread().interrupt();

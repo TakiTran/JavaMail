@@ -33,7 +33,9 @@ public class CheckingMails {
 
 	static Logger logger = Logger.getLogger(CheckingMails.class.getName());
 	private static final int BUFFER = 2048;
-
+	private static final String MESSAGE_SUCCESS = "Send result to ";
+	private static final String MESSAGE_ERROR = "Send error to ";
+	
 	public static void main(String[] args) {
 
 		String host = "imap.gmail.com";
@@ -140,11 +142,12 @@ public class CheckingMails {
 				Message message = messages[i];
 				if (checkSubject(message, textSubject)) {
 					Multipart multipart = (Multipart) message.getContent();
+					Address[] froms = message.getFrom();
+					String nameSender = froms == null ? null : ((InternetAddress) froms[0]).getAddress();
+					String messageResult = "";
 					for (int j = 0; j < multipart.getCount(); j++) {
 						BodyPart bodyPart = multipart.getBodyPart(j);
 						if (Part.ATTACHMENT.equalsIgnoreCase(bodyPart.getDisposition())) {
-							Address[] froms = message.getFrom();
-							String nameSender = froms == null ? null : ((InternetAddress) froms[0]).getAddress();
 							String fileName = bodyPart.getFileName();
 							int lastIndexDot = fileName.lastIndexOf('.');
 							if (typeExteansion.equals(fileName.substring(lastIndexDot + 1))) {
@@ -161,7 +164,6 @@ public class CheckingMails {
 										fileOutputStream.write(buffer, 0, bytesRead);
 									}
 								}
-								
 								// extract file zip.
 								extract(outputFileSub.getPath().concat("\\").concat(fileName), outputFileSub.getPath());
 								CodeExecutor worker = new CodeExecutor(outputFileSub.getPath().concat("\\").concat((fileName).substring(0,fileName.lastIndexOf('.')).concat(".java")));
@@ -169,7 +171,18 @@ public class CheckingMails {
 								Future<Integer> result =  executorService.submit(worker);
 								int grade = result.get();
 								SendingMails.sendEmail(user, pass, nameSender, textResult, grade +"/10");
+								messageResult = MESSAGE_SUCCESS.concat(nameSender);
+								logger.info(messageResult);
+							} else {
+								SendingMails.sendEmail(user, pass, nameSender, textResult, "Attachment extansion in your message not *.zip");
+								logger.info("Not file.zip");
+								messageResult = MESSAGE_ERROR.concat(nameSender);
+								logger.info(messageResult);
 							}
+						} else {
+							SendingMails.sendEmail(user, pass, nameSender, textResult, "Your message does not have an attachment.");
+							messageResult = MESSAGE_ERROR.concat(nameSender);
+							logger.info(messageResult);
 						}
 
 					}
