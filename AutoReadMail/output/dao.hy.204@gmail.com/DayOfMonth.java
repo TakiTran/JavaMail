@@ -1,20 +1,15 @@
-package com.topica.util;
 
-import java.util.logging.Logger;
 
-import com.topica.mail.CheckingMails;
-
-public class Month {
-	static Logger logger = Logger.getLogger(CheckingMails.class.getName());
+public class DayOfMonth {
 	public static void main(String[] args) {
 		if (args.length != 1) {
-			logger.info("wrong parameters");
+			System.out.println("wrong parameters");
 		} else {
 			try {
 				int month = Integer.parseInt(args[0]);
-				logger.info("RESULT: " + month);
+				System.out.println(getDay(month));
 			} catch (NumberFormatException e) {
-				logger.info(e.getMessage());
+				System.out.println("wrong format");
 			}
 		}
 	}

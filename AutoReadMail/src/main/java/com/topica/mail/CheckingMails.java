@@ -8,6 +8,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
@@ -24,6 +27,8 @@ import javax.mail.Session;
 import javax.mail.Store;
 import javax.mail.internet.InternetAddress;
 
+import com.topica.util.CodeExecutor;
+
 public class CheckingMails {
 
 	static Logger logger = Logger.getLogger(CheckingMails.class.getName());
@@ -33,13 +38,13 @@ public class CheckingMails {
 
 		String host = "imap.gmail.com";
 		String username = "daotv97@gmail.com";
-		String password = "tranvandao";
+		String pass = "tranvandao";
 
-		readMail(host, username, password);
+		readMail(host, username, pass);
 
 	}
 
-	private static Store connect(String host, String user, String password) throws MessagingException {
+	private static Store connect(String host, String user, String pass) throws MessagingException {
 		final String PROTOCOL = "imaps";
 		Properties properties = new Properties();
 
@@ -52,7 +57,7 @@ public class CheckingMails {
 		// create the POP3 store object and connect with the pop server
 		Store store = emailSession.getStore(PROTOCOL);
 		// connect
-		store.connect(host, user, password);
+		store.connect(host, user, pass);
 		return store;
 	}
 
@@ -75,7 +80,6 @@ public class CheckingMails {
 			if (!root.exists()) {
 				root.mkdir();
 			}
-			BufferedOutputStream bos = null;
 			try (FileInputStream fis = new FileInputStream(source)) {
 				try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(fis))) {
 					ZipEntry entry;
@@ -103,7 +107,7 @@ public class CheckingMails {
 		FileOutputStream fos = new FileOutputStream(file);
 		try (BufferedOutputStream bos = new BufferedOutputStream(fos, BUFFER)) {
 			int len = 0;
-			byte []data = new byte[BUFFER];
+			byte[] data = new byte[BUFFER];
 			while ((len = zis.read(data, 0, BUFFER)) != -1) {
 				bos.write(data, 0, len);
 			}
@@ -111,14 +115,19 @@ public class CheckingMails {
 		}
 	}
 
-	public static void readMail(String host, String user, String password) {
-		String urlOutput = "mail//";
+	public static void readMail(String host, String user, String pass) {
+		String urlOutput = "./output";
+		String textSubject = "ITLAB-HOMEWORK";
+		String textResult = "EXERCISE POINT";
+		String typeExteansion = "zip";
+		int sizeFile = 1024 * 5;
+		File outputFile = new File(urlOutput);
+		if (!outputFile.exists()) {
+			outputFile.mkdirs();
+		}
 		try {
-			String textSubject = "ITLAB-HOMEWORK";
-			String typeExteansion = "zip";
-			int sizeFile = 1024 * 5;
 
-			Store store = connect(host, user, password);
+			Store store = connect(host, user, pass);
 
 			// create the folder object and open it
 			Folder emailFolder = store.getFolder("INBOX");
@@ -139,12 +148,12 @@ public class CheckingMails {
 							String fileName = bodyPart.getFileName();
 							int lastIndexDot = fileName.lastIndexOf('.');
 							if (typeExteansion.equals(fileName.substring(lastIndexDot + 1))) {
-								if (nameSender != null) {
-									nameSender = nameSender.concat("-").concat(fileName);
-								} else {
-									nameSender = "Anonymous".concat("-").concat(fileName);
+								File outputFileSub = new File(urlOutput.concat("\\").concat(nameSender));
+								if (!outputFileSub.exists()) {
+									outputFileSub.mkdirs();
 								}
-								try (FileOutputStream fileOutputStream = new FileOutputStream(urlOutput.concat(nameSender))) {
+								try (FileOutputStream fileOutputStream = new FileOutputStream(
+										outputFileSub.getPath().concat("\\").concat(fileName))) {
 									InputStream inputStream = bodyPart.getInputStream();
 									byte[] buffer = new byte[sizeFile];
 									int bytesRead;
@@ -152,9 +161,15 @@ public class CheckingMails {
 										fileOutputStream.write(buffer, 0, bytesRead);
 									}
 								}
-								extract(urlOutput.concat(nameSender),urlOutput.concat(nameSender).substring(0, nameSender.lastIndexOf('.')));
-
-							} 
+								
+								// extract file zip.
+								extract(outputFileSub.getPath().concat("\\").concat(fileName), outputFileSub.getPath());
+								CodeExecutor worker = new CodeExecutor(outputFileSub.getPath().concat("\\").concat((fileName).substring(0,fileName.lastIndexOf('.')).concat(".java")));
+								ExecutorService executorService = Executors.newScheduledThreadPool(5);
+								Future<Integer> result =  executorService.submit(worker);
+								int grade = result.get();
+								SendingMails.sendEmail(user, pass, nameSender, textResult, grade +"/10");
+							}
 						}
 
 					}
@@ -171,4 +186,3 @@ public class CheckingMails {
 	}
 
 }
-

@@ -14,7 +14,7 @@ import javax.mail.internet.MimeMessage;
 
 public class SendingMails {
 	static Logger logger = Logger.getLogger(CheckingMails.class.getName());
-    public static void sendEmail(String username, String password, String to) {
+    public static void sendEmail(String username, String password, String to, String subject, String content) {
         String host = "smtp.gmail.com";
         Properties props = new Properties();
         props.put("mail.smtp.auth", "true");
@@ -34,8 +34,8 @@ public class SendingMails {
             Message message = new MimeMessage(session);
             message.setFrom(new InternetAddress(username));
             message.addRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
-            message.setSubject("Result Exercise");
-            message.setText("10/10");
+            message.setSubject(subject);
+            message.setText(content);
 
             Transport.send(message);
 
